@@ -32,7 +32,7 @@ const Feed = () => {
   const { isPending, isError, data: posts, error } = useQuery({ queryKey: ['posts'], queryFn: fetchPosts })
 
   useEffect(() => {
-    setSearchPosts(posts.filter(e => {
+    if (posts) setSearchPosts(posts?.filter(e => {
       if (e.tag.includes(searchText.toLocaleLowerCase())) return true
       if (e.creator.username.includes(searchText.toLocaleLowerCase())) return true
     }));
