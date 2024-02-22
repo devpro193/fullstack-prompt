@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import PromptCard from "./PromptCard"
+import { useQuery } from "@tanstack/react-query"
 
 const PromptCardList = ({ data, handleTagClick }) => {
   return (
@@ -18,21 +19,29 @@ const PromptCardList = ({ data, handleTagClick }) => {
 }
 
 const Feed = () => {
-  const [searchText, setSearchText] = useState([])
-  const [posts, setPosts] = useState([])
+  const [searchText, setSearchText] = useState("")
+  const [searchPosts, setSearchPosts] = useState([])
 
-  const handleSearchChange = (e) => { }
+  const fetchPosts = async () => {
+    const response = await fetch("/api/prompt")
+    const data = await response.json()
+    return data
+  }
+
+  // Queries
+  const { isPending, isError, data: posts, error } = useQuery({ queryKey: ['posts'], queryFn: fetchPosts })
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      const response = await fetch("/api/prompt")
-      const data = await response.json()
+    setSearchPosts(posts.filter(e => {
+      if (e.tag.includes(searchText.toLocaleLowerCase())) return true
+      if (e.creator.username.includes(searchText.toLocaleLowerCase())) return true
+    }));
+  }, [searchText])
 
-      setPosts(data)
-    }
+  if (isPending) return <div className="mt-16 prompt_layout">
+    <div className="prompt_card_empty"></div><div className="prompt_card_empty"></div><div className="prompt_card_empty"></div></div>
 
-    fetchPosts()
-  }, [])
+  if (isError) return <p>Error Occured!</p>
 
   return (
     <section className="feed">
@@ -41,16 +50,15 @@ const Feed = () => {
           type="text"
           placeholder="Search for a tag or username"
           value={searchText}
-          onChange={handleSearchChange}
+          onChange={(e) => setSearchText(e.target.value)}
           required
           className="search_input peer" />
       </form>
 
-      {posts.length > 0 ? <PromptCardList
+      {searchText ? <PromptCardList data={searchPosts} /> : <PromptCardList
         data={posts}
         handleTagClick={() => { }}
-      /> : <div className="mt-16 prompt_layout">
-        <div className="prompt_card_empty"></div><div className="prompt_card_empty"></div><div className="prompt_card_empty"></div></div>}
+      />}
 
     </section>
   )
